@@ -1,0 +1,49 @@
+name: No Actions Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    # Checkout without using actions/checkout
+    - name: Manual Checkout
+      run: |
+        # Clone the repository manually
+        git clone https://github.com/${{ github.repository }}.git .
+        git checkout ${{ github.ref }}
+    
+    # Setup Java without using actions/setup-java
+    - name: Manual Java Setup
+      run: |
+        # Check if Java is already installed
+        java -version || true
+        
+        # If needed, we can manually install Java
+        sudo apt-get update
+        sudo apt-get install -y openjdk-11-jdk
+        
+        # Verify Java installation
+        java -version
+        javac -version
+    
+    # Build project
+    - name: Build with Maven
+      run: |
+        # Maven is pre-installed on GitHub runners
+        mvn -version
+        mvn -B clean package -DskipTests
+        
+    # Create an output without using upload-artifact
+    - name: Create output summary
+      run: |
+        echo "Build completed at $(date)" > build_summary.txt
+        echo "Repository: ${{ github.repository }}" >> build_summary.txt
+        echo "Branch: ${{ github.ref }}" >> build_summary.txt
+        echo "Commit: ${{ github.sha }}" >> build_summary.txt
+        echo "Files built:" >> build_summary.txt
+        find modules -name "*.jar" | sort >> build_summary.txt
+        
+        # Display the summary
+        cat build_summary.txt 

@@ -1,0 +1,39 @@
+name: Shell Only Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+    
+    - name: Build with Maven
+      run: mvn -B clean install -DskipTests
+    
+    - name: Run simulation
+      run: |
+        cd modules/cloudsim-examples
+        java -cp ".:../cloudsim/target/classes:target/classes" org.cloudbus.cloudsim.examples.AutoScaling
+    
+    # Instead of upload-artifact, create a tar archive
+    - name: Package artifacts
+      run: |
+        mkdir -p /tmp/artifacts
+        cp -r modules/cloudsim-examples/target/classes/* /tmp/artifacts/
+        cd /tmp
+        tar -czf artifact.tar.gz artifacts/
+        echo "Artifact created at /tmp/artifact.tar.gz"
+        ls -la /tmp/artifact.tar.gz
+    
+    # Save artifact path for potential later use in the same job
+    - name: Set artifact path
+      run: echo "ARTIFACT_PATH=/tmp/artifact.tar.gz" >> $GITHUB_ENV 
