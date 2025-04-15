@@ -1,0 +1,31 @@
+name: Latest No Artifacts
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        cache: 'maven'
+    
+    - name: Build with Maven
+      run: mvn -B clean install -DskipTests
+      
+    - name: Run tests
+      run: mvn test
+      
+    - name: Run simulation
+      run: |
+        cd modules/cloudsim-examples
+        java -cp ".:../cloudsim/target/classes:target/classes" org.cloudbus.cloudsim.examples.AutoScaling 
