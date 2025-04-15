@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  cloudsim:
+    build: .
+    volumes:
+      - ./output:/app/output
+    environment:
+      - JAVA_OPTS=-Xmx2g
+    container_name: cloudsim-autoscaling 
