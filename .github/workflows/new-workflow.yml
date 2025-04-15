@@ -1,0 +1,76 @@
+name: CloudSim CI/CD New
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Set up Java
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+        cache: 'maven'
+    
+    - name: Build with Maven
+      run: mvn -B clean install -DskipTests
+      
+    - name: Run tests
+      run: mvn test
+    
+    - name: Run AutoScaling simulation
+      run: |
+        cd modules/cloudsim-examples
+        java -cp ".:../cloudsim/target/classes:target/classes" org.cloudbus.cloudsim.examples.AutoScaling
+      
+    - name: Archive simulation results
+      if: success()
+      uses: actions/upload-artifact@v1
+      with:
+        name: simulation-results
+        path: modules/cloudsim-examples/target/classes
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Set up Java
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+        cache: 'maven'
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v1
+      with:
+        name: simulation-results
+        path: ./simulation-results
+    
+    - name: Package for deployment
+      run: |
+        mvn -B package -DskipTests
+        mkdir -p deployment
+        cp modules/cloudsim-examples/target/*.jar deployment/
+        cp modules/cloudsim/target/*.jar deployment/
+        
+    - name: Upload deployment package
+      uses: actions/upload-artifact@v1
+      with:
+        name: deployment-package
+        path: deployment 
