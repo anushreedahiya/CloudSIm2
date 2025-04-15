@@ -7,6 +7,7 @@ import org.cloudbus.cloudsim.core.SimEvent;
 import org.cloudbus.cloudsim.provisioners.BwProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.PeProvisionerSimple;
 import org.cloudbus.cloudsim.provisioners.RamProvisionerSimple;
+import org.cloudbus.cloudsim.Cloudlet.CloudletStatus;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -199,7 +200,7 @@ public class AutoScaling {
             cloudlet = list.get(i);
             Log.print(indent + cloudlet.getCloudletId() + indent + indent);
 
-            if (cloudlet.getStatus() == Cloudlet.CloudletStatus.SUCCESS) {
+            if (cloudlet.getStatus() == CloudletStatus.SUCCESS) {
                 Log.print("SUCCESS");
 
                 Log.printLine(indent + indent + cloudlet.getResourceId()
