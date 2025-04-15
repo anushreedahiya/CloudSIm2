@@ -1,0 +1,59 @@
+name: Manual Artifact Upload
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+        cache: 'maven'
+    
+    - name: Build with Maven
+      run: mvn -B clean install -DskipTests
+      
+    - name: Run tests
+      run: mvn test
+      
+    - name: Run simulation
+      run: |
+        cd modules/cloudsim-examples
+        java -cp ".:../cloudsim/target/classes:target/classes" org.cloudbus.cloudsim.examples.AutoScaling
+      
+    - name: Package artifacts
+      run: |
+        mkdir -p artifacts
+        cp -r modules/cloudsim-examples/target/classes artifacts/
+        cd artifacts
+        zip -r simulation-results.zip .
+        
+    - name: Upload artifact to workflow run
+      run: |
+        ARTIFACT_NAME="simulation-results"
+        ARTIFACT_PATH="artifacts/simulation-results.zip"
+        CONTENT_TYPE="application/zip"
+        GITHUB_API_URL="${GITHUB_API_URL:-https://api.github.com}"
+        WORKFLOW_ID=${{ github.run_id }}
+        
+        # Create artifact
+        echo "Creating artifact ${ARTIFACT_NAME}..."
+        
+        # Create artifact using GitHub API
+        RESPONSE=$(curl -s -X POST \
+          -H "Authorization: token ${{ github.token }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          "${GITHUB_API_URL}/repos/${{ github.repository }}/actions/runs/${WORKFLOW_ID}/artifacts" \
+          -d "{\"name\":\"${ARTIFACT_NAME}\"}")
+        
+        echo "Upload response: ${RESPONSE}"
+        echo "Artifact upload attempted. Check workflow run for details." 
