@@ -1,0 +1,16 @@
+name: Ultra Basic
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    # Only checkout, no other actions
+    - name: Checkout
+      uses: actions/checkout@v2
+      
+    # Just list files, no build
+    - name: List files
+      run: ls -la 

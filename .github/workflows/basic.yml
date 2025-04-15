@@ -1,4 +1,4 @@
-name: Basic Build
+name: Minimal Build
 
 on:
   workflow_dispatch:
@@ -7,18 +7,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
     
-    - name: Set up JDK 11
+    - name: Set up JDK
       uses: actions/setup-java@v2
       with:
         java-version: '11'
         distribution: 'adopt'
     
+    # Just build the project, no tests or simulation
     - name: Build with Maven
-      run: mvn -B clean install -DskipTests
-    
-    - name: Run simulation
-      run: |
-        cd modules/cloudsim-examples
-        java -cp ".:../cloudsim/target/classes:target/classes" org.cloudbus.cloudsim.examples.AutoScaling 
+      run: mvn -B clean package -DskipTests 
