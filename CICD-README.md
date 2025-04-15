@@ -98,3 +98,72 @@ If you encounter issues:
 ## Support
 
 For questions or issues, please open a GitHub issue in the repository. 
+
+name: CloudSim CI/CD
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    # Manual trigger 
+
+env:
+  MAVEN_OPTS: "-Xmx2g"
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+- name: Run AutoScaling simulation
+  run: |
+    cd modules/cloudsim-examples
+    # Use OS-agnostic classpath separator
+    if [ "$RUNNER_OS" == "Windows" ]; then
+      java -cp ".;../cloudsim/target/classes;target/classes" org.cloudbus.cloudsim.examples.AutoScaling
+    else
+      java -cp ".:../cloudsim/target/classes:target/classes" org.cloudbus.cloudsim.examples.AutoScaling
+    fi
+  shell: bash
+
+- name: Cache Maven packages
+  uses: actions/cache@v3
+  with:
+    path: ~/.m2
+    key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+    restore-keys: ${{ runner.os }}-m2 
+
+pages:
+  needs: build
+  runs-on: ubuntu-latest
+  if: github.ref == 'refs/heads/main'
+  
+  steps:
+    - name: Download simulation results
+      uses: actions/download-artifact@v3
+      with:
+        name: simulation-results
+        path: ./public
+    
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+    
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: './public'
+    
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
+
+- name: Send email notification
+  if: always()
+  uses: dawidd6/action-send-mail@v3
+  with:
+    server_address: ${{ secrets.MAIL_SERVER }}
+    server_port: ${{ secrets.MAIL_PORT }}
+    username: ${{ secrets.MAIL_USERNAME }}
+    password: ${{ secrets.MAIL_PASSWORD }}
+    subject: CloudSim CI/CD ${{ job.status }}
+    body: CloudSim workflow completed with status ${{ job.status }}
+    to: your-email@example.com
+    from: GitHub Actions 
