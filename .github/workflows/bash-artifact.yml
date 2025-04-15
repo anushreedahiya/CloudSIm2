@@ -1,0 +1,58 @@
+name: Bash Artifact Handling
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v1
+    
+    - name: Set up JDK
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
+    
+    - name: Build with Maven
+      run: mvn -B clean install -DskipTests
+      
+    - name: Run tests
+      run: mvn test
+      
+    - name: Run simulation
+      run: |
+        cd modules/cloudsim-examples
+        java -cp ".:../cloudsim/target/classes:target/classes" org.cloudbus.cloudsim.examples.AutoScaling
+      
+    - name: Create artifact directory
+      run: mkdir -p /tmp/artifacts
+      
+    - name: Copy simulation results to artifact directory
+      run: |
+        cp -r modules/cloudsim-examples/target/classes/* /tmp/artifacts/
+        
+    - name: Install GitHub CLI
+      run: |
+        curl -fsSL https://github.com/cli/cli/releases/download/v2.23.0/gh_2.23.0_linux_amd64.tar.gz -o gh.tar.gz
+        tar xzf gh.tar.gz
+        sudo mv gh_*/bin/gh /usr/local/bin/
+        
+    - name: Upload artifacts using gh CLI
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Create artifact archive
+        cd /tmp/artifacts
+        tar -czf simulation-results.tar.gz *
+        
+        # Upload artifact using gh CLI
+        gh api \
+          --method POST \
+          -H "Accept: application/vnd.github+json" \
+          /repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts \
+          -F name='simulation-results' \
+          -F data=@simulation-results.tar.gz 
