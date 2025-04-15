@@ -35,7 +35,7 @@ jobs:
       
     - name: Archive simulation results
       if: success()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       with:
         name: simulation-results
         path: modules/cloudsim-examples/target/classes
@@ -57,7 +57,7 @@ jobs:
         cache: maven
     
     - name: Download build artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v2
       with:
         name: simulation-results
         path: ./simulation-results
@@ -70,7 +70,7 @@ jobs:
         cp modules/cloudsim/target/*.jar deployment/
         
     - name: Upload deployment package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       with:
         name: deployment-package
         path: deployment
